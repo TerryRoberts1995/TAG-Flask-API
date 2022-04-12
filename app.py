@@ -21,6 +21,12 @@ ma = Marshmallow(app)
 CORS(app)
 bcrypt = Bcrypt(app)
 
+users_table = db.Table('users_table',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
+    db.Column('artist_id', db.Integer, db.ForeignKey('artist.artist_id'))
+)
+
+
 class User(db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
@@ -33,6 +39,18 @@ class User(db.Model):
         self.password = password
 
 
+class Artist(User):
+    __tablename__ = 'artist'
+    artist_id = db.Column(db.Integer, primary_key=True)
+    artist_username = db.Column(db.String, unique=True, nullable=False)
+    artist_password = db.Column(db.String, nullable=False)
+    motto = db.Column(db.String, nullable=True)
+    userFk = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    def __init__(self, username, password, motto):
+        super().__init__(username, password)
+        self.motto = motto
+
 def generate_return_data(schema):
     if isinstance(schema, dict):
         print("DICT")
@@ -42,8 +60,7 @@ def generate_return_data(schema):
         user = db.session.query(User).filter(User.id == schema[0].get("id")).first()
     
     return {
-        "user": user_schema.dump(user),
-        "item": schema
+        "user": user_schema.dump(user)
     }
 
 
@@ -203,6 +220,14 @@ class UserSchema(ma.Schema):
     blogs = ma.Nested(multiple_blog_schema)
 user_schema = UserSchema()
 multiple_user_schema = UserSchema(many=True)
+
+class ArtistSchema(ma.Schema):
+    class Meta:
+        fields = ('id', 'username', 'motto', 'blogs')
+    blogs = ma.Nested(multiple_blog_schema)
+
+artist_schema = ArtistSchema()
+multiple_artist_schema = ArtistSchema(many=True)
 
 if __name__ == "__main__":
     app.run(debug=True)
