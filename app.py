@@ -49,6 +49,8 @@ class Artist(User):
 
     def __init__(self, username, password, motto):
         super().__init__(username, password)
+        self.artist_username = username 
+        self.artist_password = password
         self.motto = motto
 
 def generate_return_data(schema):
@@ -228,6 +230,55 @@ class ArtistSchema(ma.Schema):
 
 artist_schema = ArtistSchema()
 multiple_artist_schema = ArtistSchema(many=True)
+
+
+@app.route('/artist/add', methods=['POST'])
+def add_artist():
+    if request.content_type != 'application/json':
+        return jsonify("Error: Data must be JSON.")
+
+    post_data = request.get_json()
+    username = post_data.get("username")
+    password = post_data.get("password")
+    motto = post_data.get("motto")
+    userFk = post_data.get("userFk")
+
+    possible_duplicate = db.session.query(Artist).filter(Artist.username == username).first()
+
+    if possible_duplicate is not None:
+        return jsonify('Error: That username is Taken.')
+    
+    encrypted_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    new_artist = Artist(username, encrypted_password, motto)
+
+    db.session.add(new_artist)
+    db.session.commit()
+
+    return jsonify('New artist has been created.')
+
+@app.route('/artist/verify', methods=['POST'])
+def verify_artist():
+    if request.content_type != 'application/json':
+        return jsonify('Error: Data must be JSON.')
+
+    post_data = request.get_json()
+    username = post_data.get('username')
+    password = post_data.get('password')
+
+    artist = db.session.query(User).filter(User.username == username).first()
+
+    if artist is None:
+        return jsonify('Artist NOT verified.')
+
+    if bcrypt.check_password_hash(user.password, password) == False:
+        return jsonify('Artist NOT verified')
+
+    return jsonify('Artist has been verified.')
+
+@app.route("/artist/get", methods=["GET"])
+def get_all_artist():
+    all_artist = db.session.query(Artist).all()
+    return jsonify(multiple_artist_schema.dump(all_artist))
 
 if __name__ == "__main__":
     app.run(debug=True)
