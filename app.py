@@ -46,6 +46,7 @@ class Artist(User):
     artist_password = db.Column(db.String, nullable=False)
     motto = db.Column(db.String, nullable=True)
     userFk = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    blogs = db.relationship('Blog', backref='artist', cascade='all, delete, delete-orphan')
 
     def __init__(self, username, password, motto):
         super().__init__(username, password)
@@ -62,7 +63,8 @@ def generate_return_data(schema):
         user = db.session.query(User).filter(User.id == schema[0].get("id")).first()
     
     return {
-        "user": user_schema.dump(user)
+        "user": user_schema.dump(user),
+        "artist": artist_schema.dump(user)
     }
 
 
